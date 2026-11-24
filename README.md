@@ -1,14 +1,16 @@
-# SLTS — ASL Alphabet Recognition (A–Z)
+# SLTS — ASL Letter and Digit Recognition (A–Z, 0–9)
 
 A beginner-friendly, one-hand webcam prototype that recognizes ASL alphabet
-hand configurations using MediaPipe landmarks and a Random Forest classifier.
+and digit hand configurations using MediaPipe landmarks and a Random Forest
+classifier.
 
 ## What it does
 
-1. Downloads the ASL Alphabet image dataset from Kaggle using KaggleHub.
+1. Downloads the ASL Alphabet image dataset from Kaggle using KaggleHub and the
+   sign-language digits dataset from GitHub.
 2. Detects one hand in each dataset image using MediaPipe.
 3. Converts 21 hand landmarks into 63 normalized numeric features.
-4. Trains a Random Forest model for A–Z.
+4. Trains a Random Forest model for A–Z and 0–9.
 5. Opens the webcam and displays the predicted letter.
 
 The webcam pipeline uses a hand-landmark detector configured for one hand.
@@ -56,7 +58,10 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 3. Configure the token as instructed by Kaggle/KaggleHub.
 4. Do not share `kaggle.json` or API credentials.
 
-KaggleHub will download `grassknoted/asl-alphabet` to its local cache.
+KaggleHub will download `grassknoted/asl-alphabet` to its local cache. The
+digit dataset is downloaded from the
+[Arda Mavi Sign Language Digits Dataset](https://github.com/ardamavi/Sign-Language-Digits-Dataset)
+into `datasets/raw`.
 
 ## Run the project
 
@@ -70,7 +75,7 @@ python -m src.evaluate_model
 python main.py
 ```
 
-The first download is large (the dataset is approximately 1.1 GB). Landmark
+The alphabet dataset download is large (approximately 1.1 GB). Landmark
 extraction can take a while. `MAX_IMAGES_PER_CLASS` in `config.py` is set to
 1500 to make the first run manageable. Increase it or set it to `None` for
 more training images, subject to available disk space and time.
@@ -91,8 +96,8 @@ more training images, subject to available disk space and time.
 
 - `Could not open webcam`: close other camera applications and check Windows
   camera permissions. Try changing `cv2.VideoCapture(0)` to `1`.
-- No class folders found: inspect the KaggleHub download and ensure the dataset
-  contains `A` through `Z` class folders.
+- Missing class folders: run the downloader and verify the alphabet dataset
+  has `A` through `Z` folders and the digit dataset has `0` through `9` folders.
 - No hand landmarks extracted: use clear, front-facing hand images. The dataset
   may include images that the hand detector cannot process.
 - Low live accuracy: improve lighting, keep the hand fully visible, use a plain
@@ -112,5 +117,14 @@ For a stronger evaluation, use a separate signer/session-based test set.
 ASL Alphabet dataset by grassknoted:
 https://www.kaggle.com/datasets/grassknoted/asl-alphabet
 
-The Kaggle dataset page lists GPL-2.0. Review the dataset's current terms and
-attribution requirements before redistributing the dataset or project.
+Sign Language Digits Dataset by Arda Mavi and students at Turkey Ankara
+Ayrancı Anadolu High School:
+https://github.com/ardamavi/Sign-Language-Digits-Dataset
+
+The digit dataset asks users of the data in research projects to cite:
+Mavi, A. (2020), “A New Dataset and Proposed Convolutional Neural Network
+Architecture for Classification of American Sign Language Digits,”
+arXiv:2011.08927.
+
+Review each dataset's current license, terms, and attribution requirements
+before redistributing the data or project.

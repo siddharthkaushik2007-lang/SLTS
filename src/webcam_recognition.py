@@ -1,4 +1,4 @@
-"""Live one-hand ASL alphabet recognition using the trained model."""
+"""Live one-hand ASL letter and digit recognition using the trained model."""
 
 from collections import deque, Counter
 import time
@@ -34,15 +34,15 @@ def main():
 
     history = deque(maxlen=SMOOTHING_WINDOW)
     probability_history = deque(maxlen=SMOOTHING_WINDOW)
-    current_letter = "—"
+    current_label = "—"
     top_predictions = []
     last_timestamp = 0
     tts=TextToSpeech()
-    last_spoken_letter = None
-    candidate_letter = None
+    last_spoken_label = None
+    candidate_label = None
     candidate_frames = 0
 
-    print("SLTS running. Press Q to quit.")
+    print("SLTS running for ASL letters and digits. Press Q to quit.")
 
     try:
         while True:
@@ -79,21 +79,21 @@ def main():
                         stable_index = int(averaged_probabilities.argmax())
                         stable_prediction = str(model.classes_[stable_index])
 
-                        if stable_prediction == candidate_letter:
+                        if stable_prediction == candidate_label:
                             candidate_frames += 1
                         else:
-                            candidate_letter = stable_prediction
+                            candidate_label = stable_prediction
                             candidate_frames = 1
 
-                        # Smooth the main displayed letter across recent frames.
+                        # Smooth the main displayed sign across recent frames.
                         history.append(prediction)
-                        current_letter = Counter(history).most_common(1)[0][0]
+                        current_label = Counter(history).most_common(1)[0][0]
                         if (
                             candidate_frames >= STABLE_PREDICTION_FRAMES
-                            and candidate_letter != last_spoken_letter
+                            and candidate_label != last_spoken_label
                         ):
                             tts.speak(stable_prediction)
-                            last_spoken_letter = stable_prediction
+                            last_spoken_label = stable_prediction
 
                         # Show the three most likely classes for the current frame.
                         top_indices = probabilities.argsort()[-TOP_K:][::-1]
@@ -102,33 +102,33 @@ def main():
                             for i in top_indices
                         ]
                     else:
-                        # Below 20%: show no predicted letter or top-three list.
+                        # Below 20%: show no predicted sign or top-three list.
                         history.clear()
                         probability_history.clear()
-                        current_letter = "—"
+                        current_label = "—"
                         top_predictions = []
-                        candidate_letter = None
+                        candidate_label = None
                         candidate_frames = 0
                 else:
                     history.clear()
                     probability_history.clear()
-                    current_letter = "—"
+                    current_label = "—"
                     top_predictions = []
-                    candidate_letter = None
+                    candidate_label = None
                     candidate_frames = 0
             else:
                 history.clear()
                 probability_history.clear()
-                current_letter = "Show one hand"
+                current_label = "Show one hand"
                 top_predictions = []
-                candidate_letter = None
+                candidate_label = None
                 candidate_frames = 0
 
             # Prediction panel.
             cv2.rectangle(frame, (10, 10), (410, 185), (20, 20, 20), -1)
             cv2.putText(
                 frame,
-                f"Letter: {current_letter}",
+                f"Sign: {current_label}",
                 (25, 48),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.85,
@@ -147,18 +147,18 @@ def main():
                     1,
                 )
 
-                for rank, (letter, probability) in enumerate(top_predictions, start=1):
+                for rank, (label, probability) in enumerate(top_predictions, start=1):
                     y = 108 + (rank - 1) * 24
                     cv2.putText(
                         frame,
-                        f"{rank}. {letter}  ({probability * 100:.1f}%)",
+                        f"{rank}. {label}  ({probability * 100:.1f}%)",
                         (35, y),
                         cv2.FONT_HERSHEY_SIMPLEX,
                         0.52,
                         (240, 240, 240),
                         1,
                     )
-            elif current_letter == "—":
+            elif current_label == "—":
                 cv2.putText(
                     frame,
                     "No prediction (below 20%)",
@@ -179,7 +179,7 @@ def main():
                 1,
             )
 
-            cv2.imshow("SLTS - ASL Alphabet Recognition", frame)
+            cv2.imshow("SLTS - ASL Letters and Digits", frame)
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
 

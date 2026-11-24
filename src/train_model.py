@@ -1,4 +1,4 @@
-"""Train and save a Random Forest classifier for ASL A-Z."""
+"""Train and save a Random Forest classifier for ASL letters and digits."""
 
 import json
 import joblib
@@ -12,7 +12,13 @@ from sklearn.metrics import (
     ConfusionMatrixDisplay
 )
 
-from config import FEATURES_CSV, CLASSIFIER_PATH, METRICS_PATH, MODEL_DIR
+from config import (
+    CLASSIFIER_PATH,
+    FEATURES_CSV,
+    LABELS,
+    METRICS_PATH,
+    MODEL_DIR,
+)
 
 
 def main():
@@ -23,7 +29,28 @@ def main():
 
     df = pd.read_csv(FEATURES_CSV)
     X = df.drop(columns=["label"]).values
-    y = df["label"].values
+    y = df["label"].astype(str).values
+
+    present_labels = set(y)
+    missing_labels = [label for label in LABELS if label not in present_labels]
+    unexpected_labels = sorted(present_labels - set(LABELS))
+    if missing_labels or unexpected_labels:
+        raise ValueError(
+            "Training data must contain exactly classes A-Z and 0-9. "
+            f"Missing: {missing_labels or 'none'}; "
+            f"unexpected: {unexpected_labels or 'none'}. "
+            "Run the dataset processor again after downloading both datasets."
+        )
+
+    class_counts = pd.Series(y).value_counts()
+    undersampled = [
+        label for label in LABELS if class_counts.get(label, 0) < 2
+    ]
+    if undersampled:
+        raise ValueError(
+            "At least two examples are required for every class to create a "
+            f"stratified train/test split. Too few examples: {undersampled}"
+        )
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.20, random_state=42, stratify=y
@@ -57,12 +84,11 @@ def main():
     }
     METRICS_PATH.write_text(json.dumps(metrics, indent=2))
 
-    labels = sorted(set(y))
-    cm = confusion_matrix(y_test, predictions, labels=labels)
-    display = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
+    cm = confusion_matrix(y_test, predictions, labels=LABELS)
+    display = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=LABELS)
     fig, ax = plt.subplots(figsize=(14, 14))
     display.plot(ax=ax, xticks_rotation=90, cmap="Blues", colorbar=False)
-    ax.set_title("ASL Alphabet — Confusion Matrix")
+    ax.set_title("ASL Letters and Digits — Confusion Matrix")
     fig.tight_layout()
     fig.savefig(MODEL_DIR / "confusion_matrix.png", dpi=160)
     plt.close(fig)
