@@ -1,5 +1,5 @@
 """Live one-hand ASL alphabet recognition using the trained model."""
-
+from src.tts import TextToSpeech
 from collections import deque, Counter
 import time
 
@@ -34,7 +34,8 @@ def main():
     current_letter = "—"
     top_predictions = []
     last_timestamp = 0
-
+    tts = TextToSpeech()
+    last_spoken_letter = None
     print("SLTS running. Press Q to quit.")
 
     try:
@@ -69,6 +70,9 @@ def main():
                         # Smooth the main displayed letter across recent frames.
                         history.append(prediction)
                         current_letter = Counter(history).most_common(1)[0][0]
+                        if current_letter != last_spoken_letter:
+                         tts.speak(current_letter)
+                         last_spoken_letter = current_letter
 
                         # Show the three most likely classes for the current frame.
                         top_indices = probabilities.argsort()[-TOP_K:][::-1]
@@ -153,7 +157,7 @@ def main():
         camera.release()
         cv2.destroyAllWindows()
         detector.close()
-
+        tts.close()
 
 def detector_mode():
     import mediapipe as mp
